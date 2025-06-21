@@ -1,0 +1,358 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="website-scanner py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="scanner-header text-center mb-5" data-aos="fade-down">
+                    <h2 class="glow">WEBSITE <span class="text-gradient">THREAT</span> SCANNER</h2>
+                    <div class="cyber-line mx-auto"></div>
+                    <p class="mt-3">Analyze websites for phishing attempts and security vulnerabilities</p>
+                </div>
+                
+                <div class="scanner-container" data-aos="fade-up">
+                    <form method="POST">
+                        <div class="form-group mb-4">
+                            <label for="url" class="form-label">
+                                <i class="fas fa-globe me-2"></i>WEBSITE URL
+                            </label>
+                            <div class="input-group">
+                                <input type="url" class="form-control cyber-input" id="url" 
+                                       name="url" value="{{ url if url else '' }}" 
+                                       placeholder="https://example.com" required>
+                            </div>
+                        </div>
+                        
+                        <div class="text-center">
+                            <button type="submit" class="cyber-btn cyber-btn-lg hvr-bob">
+                                <i class="fas fa-shield-virus me-2"></i>SCAN WEBSITE
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                
+                {% if result %}
+                <div class="scan-results mt-5" data-aos="fade-in">
+                    <div class="results-header text-center mb-4">
+                        <h3 class="glow">SCAN <span class="text-gradient">RESULTS</span></h3>
+                        <div class="cyber-line mx-auto"></div>
+                    </div>
+                    
+                    <div class="threat-level-card mb-4" data-aos="zoom-in">
+                        <div class="threat-header">
+                            <h4>
+                                <i class="fas fa-radiation me-2"></i>
+                                THREAT LEVEL: 
+                                <span class="threat-value {% if result.likelihood == 'High' %}text-danger
+                                                         {% elif result.likelihood == 'Medium' %}text-warning
+                                                         {% elif result.likelihood == 'Low' %}text-info
+                                                         {% else %}text-secondary{% endif %}">
+                                    {{ result.likelihood }}
+                                </span>
+                            </h4>
+                        </div>
+                        <div class="threat-meter">
+                            <div class="meter-bar" style="width: {{ result.score }}%; 
+                                                         background: {% if result.likelihood == 'High' %}linear-gradient(90deg, #ff2ced, #f72585)
+                                                                     {% elif result.likelihood == 'Medium' %}linear-gradient(90deg, #ff9a00, #ffcc00)
+                                                                     {% elif result.likelihood == 'Low' %}linear-gradient(90deg, #00ff87, #0ff0fc)
+                                                                     {% else %}linear-gradient(90deg, #6c757d, #adb5bd){% endif %};">
+                                <div class="meter-glow"></div>
+                            </div>
+                            <div class="meter-labels">
+                                <span>0</span>
+                                <span>50</span>
+                                <span>100</span>
+                            </div>
+                        </div>
+                        <div class="threat-score">
+                            CONFIDENCE SCORE: <span class="score-value">{{ result.score }}</span>/100
+                        </div>
+                    </div>
+                    
+                    {% if result.suspicious_domain %}
+                    <div class="alert-card alert-danger mb-4" data-aos="fade-right">
+                        <div class="alert-icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="alert-content">
+                            <h5>SUSPICIOUS DOMAIN DETECTED</h5>
+                            <p>This domain matches known phishing patterns or appears to be impersonating a legitimate website.</p>
+                        </div>
+                        <div class="alert-pulse"></div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="alert-card alert-secondary mb-4" data-aos="fade-right" data-aos-delay="100">
+                        <div class="alert-icon">
+                            <i class="fas fa-project-diagram"></i>
+                        </div>
+                        <div class="alert-content">
+                            <h5>NETWORK ANALYSIS</h5>
+                            {% if result.has_connection %}
+                                {% if result.connection_hops == 0 %}
+                                <p class="text-danger">
+                                    <i class="fas fa-skull-crossbones me-2"></i>
+                                    Direct connection to known phishing infrastructure
+                                </p>
+                                {% else %}
+                                <p class="text-warning">
+                                    <i class="fas fa-route me-2"></i>
+                                    {{ result.connection_hops }} hop(s) from malicious network
+                                </p>
+                                {% endif %}
+                            {% else %}
+                            <p class="text-success">
+                                <i class="fas fa-check-circle me-2"></i>
+                                No direct connections to known threats
+                            </p>
+                            {% endif %}
+                        </div>
+                        <div class="alert-pulse"></div>
+                    </div>
+                    
+                    {% if result.security_issues %}
+                    <div class="alert-card alert-warning mb-4" data-aos="fade-right" data-aos-delay="200">
+                        <div class="alert-icon">
+                            <i class="fas fa-lock-open"></i>
+                        </div>
+                        <div class="alert-content">
+                            <h5>SECURITY VULNERABILITIES</h5>
+                            <ul class="threat-list">
+                                {% for issue in result.security_issues %}
+                                <li>
+                                    <i class="fas fa-arrow-right me-2"></i>
+                                    {{ issue }}
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        <div class="alert-pulse"></div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if result.domain_analysis %}
+                    <div class="analysis-card" data-aos="fade-up">
+                        <div class="analysis-header">
+                            <h4><i class="fas fa-search me-2"></i>DOMAIN FORENSICS</h4>
+                        </div>
+                        <div class="analysis-grid">
+                            <div class="analysis-item" data-aos="flip-left">
+                                <div class="analysis-icon">
+                                    <i class="fas fa-network-wired"></i>
+                                </div>
+                                <div class="analysis-content">
+                                    <h6>DOMAIN STRUCTURE</h6>
+                                    <p><strong>Domain:</strong> {{ result.domain_analysis.domain }}</p>
+                                    {% if result.domain_analysis.subdomain %}
+                                    <p><strong>Subdomain:</strong> {{ result.domain_analysis.subdomain }}</p>
+                                    {% endif %}
+                                    <p><strong>TLD:</strong> {{ result.domain_analysis.tld }}</p>
+                                </div>
+                            </div>
+                            
+                            <div class="analysis-item" data-aos="flip-left" data-aos-delay="100">
+                                <div class="analysis-icon">
+                                    <i class="fas fa-shield-alt"></i>
+                                </div>
+                                <div class="analysis-content">
+                                    <h6>SECURITY INDICATORS</h6>
+                                    {% if result.domain_analysis.is_ip %}
+                                    <p class="text-danger">
+                                        <i class="fas fa-exclamation-circle me-2"></i>
+                                        Suspicious IP address usage
+                                    </p>
+                                    {% else %}
+                                    <p class="text-success">
+                                        <i class="fas fa-check-circle me-2"></i>
+                                        Standard domain naming
+                                    </p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="scan-visualization mt-5" data-aos="fade-up">
+                        <div class="visualization-header text-center mb-4">
+                            <h4><i class="fas fa-chart-network me-2"></i>THREAT VISUALIZATION</h4>
+                        </div>
+                        <div class="visualization-container">
+                            <div class="network-node main-node">
+                                <div class="node-pulse"></div>
+                                <div class="node-icon">
+                                    <i class="fas fa-globe"></i>
+                                </div>
+                                <div class="node-label">Scanned Site</div>
+                            </div>
+                            
+                            {% if result.has_connection %}
+                            <div class="network-line"></div>
+                            
+                            <div class="network-node threat-node">
+                                <div class="node-pulse"></div>
+                                <div class="node-icon">
+                                    <i class="fas fa-skull"></i>
+                                </div>
+                                <div class="node-label">Known Threat</div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .website-scanner {
+        background: radial-gradient(ellipse at top, rgba(10, 10, 18, 0.9) 0%, var(--cyber-dark) 100%);
+    }
+    
+    .scan-visualization {
+        background: rgba(26, 26, 46, 0.7);
+        border: 1px solid rgba(0, 255, 65, 0.2);
+        border-radius: 5px;
+        padding: 30px;
+    }
+    
+    .visualization-header h4 {
+        color: var(--matrix-green);
+    }
+    
+    .visualization-container {
+        position: relative;
+        height: 200px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    
+    .network-node {
+        position: relative;
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 2;
+    }
+    
+    .main-node {
+        background: rgba(0, 255, 65, 0.1);
+        border: 2px solid var(--matrix-green);
+        box-shadow: 0 0 20px rgba(0, 255, 65, 0.3);
+    }
+    
+    .threat-node {
+        background: rgba(247, 37, 133, 0.1);
+        border: 2px solid #f72585;
+        box-shadow: 0 0 20px rgba(247, 37, 133, 0.3);
+    }
+    
+    .node-pulse {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        animation: nodePulse 2s infinite;
+        z-index: -1;
+    }
+    
+    .main-node .node-pulse {
+        background: rgba(0, 255, 65, 0.1);
+    }
+    
+    .threat-node .node-pulse {
+        background: rgba(247, 37, 133, 0.1);
+    }
+    
+    @keyframes nodePulse {
+        0% { transform: scale(1); opacity: 0.7; }
+        100% { transform: scale(1.5); opacity: 0; }
+    }
+    
+    .node-icon {
+        font-size: 2rem;
+        margin-bottom: 5px;
+    }
+    
+    .main-node .node-icon {
+        color: var(--matrix-green);
+    }
+    
+    .threat-node .node-icon {
+        color: #f72585;
+    }
+    
+    .node-label {
+        font-size: 0.8rem;
+        text-align: center;
+    }
+    
+    .network-line {
+        position: absolute;
+        height: 2px;
+        width: 100px;
+        background: linear-gradient(to right, 
+            var(--matrix-green), 
+            #f72585);
+        box-shadow: 0 0 10px rgba(247, 37, 133, 0.5);
+        z-index: 1;
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .visualization-container {
+            flex-direction: column;
+            height: auto;
+        }
+        
+        .network-line {
+            width: 2px;
+            height: 100px;
+            background: linear-gradient(to bottom, 
+                var(--matrix-green), 
+                #f72585);
+        }
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Animate network visualization
+        if (document.querySelector('.network-node')) {
+            gsap.from('.network-node', {
+                scale: 0,
+                duration: 1,
+                ease: "elastic.out(1, 0.5)"
+            });
+            
+            gsap.from('.network-line', {
+                scaleX: 0,
+                duration: 1,
+                delay: 0.5,
+                ease: "power2.out"
+            });
+        }
+        
+        // Animate threat node if present
+        const threatNode = document.querySelector('.threat-node');
+        if (threatNode) {
+            gsap.to(threatNode, {
+                x: 10,
+                yoyo: true,
+                repeat: -1,
+                duration: 2,
+                ease: "sine.inOut"
+            });
+        }
+    });
+</script>
+{% endblock %}

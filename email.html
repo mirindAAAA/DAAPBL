@@ -1,0 +1,451 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="email-scanner py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="scanner-header text-center mb-5" data-aos="fade-down">
+                    <h2 class="glow">EMAIL <span class="text-gradient">THREAT</span> SCANNER</h2>
+                    <div class="cyber-line mx-auto"></div>
+                    <p class="mt-3">Detect phishing attempts in email content with advanced pattern matching</p>
+                </div>
+                
+                <div class="scanner-container" data-aos="fade-up">
+                    <form method="POST">
+                        <div class="form-group mb-4">
+                            <label for="email_content" class="form-label">
+                                <i class="fas fa-envelope me-2"></i>EMAIL CONTENT
+                            </label>
+                            <div class="input-group">
+                                <textarea class="form-control cyber-input" id="email_content" 
+                                          name="email_content" rows="8" 
+                                          placeholder="Paste suspicious email content here..." 
+                                          required>{{ email_content if email_content else '' }}</textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="text-center">
+                            <button type="submit" class="cyber-btn cyber-btn-lg hvr-bob">
+                                <i class="fas fa-shield-virus me-2"></i>SCAN EMAIL
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                
+                {% if result %}
+                <div class="scan-results mt-5" data-aos="fade-in">
+                    <div class="results-header text-center mb-4">
+                        <h3 class="glow">SCAN <span class="text-gradient">RESULTS</span></h3>
+                        <div class="cyber-line mx-auto"></div>
+                    </div>
+                    
+                    <div class="threat-level-card mb-4" data-aos="zoom-in">
+                        <div class="threat-header">
+                            <h4>
+                                <i class="fas fa-radiation me-2"></i>
+                                THREAT LEVEL: 
+                                <span class="threat-value {% if result.likelihood == 'High' %}text-danger
+                                                         {% elif result.likelihood == 'Medium' %}text-warning
+                                                         {% elif result.likelihood == 'Low' %}text-info
+                                                         {% else %}text-secondary{% endif %}">
+                                    {{ result.likelihood }}
+                                </span>
+                            </h4>
+                        </div>
+                        <div class="threat-meter">
+                            <div class="meter-bar" style="width: {{ result.score }}%; 
+                                                         background: {% if result.likelihood == 'High' %}linear-gradient(90deg, #ff2ced, #f72585)
+                                                                     {% elif result.likelihood == 'Medium' %}linear-gradient(90deg, #ff9a00, #ffcc00)
+                                                                     {% elif result.likelihood == 'Low' %}linear-gradient(90deg, #00ff87, #0ff0fc)
+                                                                     {% else %}linear-gradient(90deg, #6c757d, #adb5bd){% endif %};">
+                                <div class="meter-glow"></div>
+                            </div>
+                            <div class="meter-labels">
+                                <span>0</span>
+                                <span>50</span>
+                                <span>100</span>
+                            </div>
+                        </div>
+                        <div class="threat-score">
+                            CONFIDENCE SCORE: <span class="score-value">{{ result.score }}</span>/100
+                        </div>
+                    </div>
+                    
+                    {% if result.suspicious_sender %}
+                    <div class="alert-card alert-danger mb-4" data-aos="fade-right">
+                        <div class="alert-icon">
+                            <i class="fas fa-user-secret"></i>
+                        </div>
+                        <div class="alert-content">
+                            <h5>SUSPICIOUS SENDER DETECTED</h5>
+                            <p>The email sender appears to be forged or impersonating a legitimate entity.</p>
+                        </div>
+                        <div class="alert-pulse"></div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if result.suspicious_links %}
+                    <div class="alert-card alert-warning mb-4" data-aos="fade-right" data-aos-delay="100">
+                        <div class="alert-icon">
+                            <i class="fas fa-link"></i>
+                        </div>
+                        <div class="alert-content">
+                            <h5>MALICIOUS LINKS IDENTIFIED</h5>
+                            <ul class="threat-list">
+                                {% for link in result.suspicious_links %}
+                                <li>
+                                    <i class="fas fa-arrow-right me-2"></i>
+                                    <span class="link-text">{{ link }}</span>
+                                    <span class="link-badge">Phishing</span>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        <div class="alert-pulse"></div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if result.suspicious_content %}
+                    <div class="alert-card alert-info mb-4" data-aos="fade-right" data-aos-delay="200">
+                        <div class="alert-icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="alert-content">
+                            <h5>SUSPICIOUS CONTENT FOUND</h5>
+                            <ul class="threat-list">
+                                {% for content in result.suspicious_content %}
+                                <li>
+                                    <i class="fas fa-arrow-right me-2"></i>
+                                    {{ content }}
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        <div class="alert-pulse"></div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if result.email_analysis %}
+                    <div class="analysis-card" data-aos="fade-up">
+                        <div class="analysis-header">
+                            <h4><i class="fas fa-search me-2"></i>EMAIL FORENSICS</h4>
+                        </div>
+                        <div class="analysis-grid">
+                            <div class="analysis-item" data-aos="flip-left">
+                                <div class="analysis-icon">
+                                    <i class="fas fa-user-tag"></i>
+                                </div>
+                                <div class="analysis-content">
+                                    <h6>SENDER INFORMATION</h6>
+                                    <p><strong>From:</strong> {{ result.email_analysis.sender }}</p>
+                                    {% if result.email_analysis.reply_to %}
+                                    <p><strong>Reply-To:</strong> {{ result.email_analysis.reply_to }}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="analysis-item" data-aos="flip-left" data-aos-delay="100">
+                                <div class="analysis-icon">
+                                    <i class="fas fa-file-alt"></i>
+                                </div>
+                                <div class="analysis-content">
+                                    <h6>MESSAGE DETAILS</h6>
+                                    <p><strong>Subject:</strong> {{ result.email_analysis.subject }}</p>
+                                    <p><strong>Date:</strong> {{ result.email_analysis.date }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .email-scanner {
+        background: radial-gradient(ellipse at top, rgba(10, 10, 18, 0.9) 0%, var(--cyber-dark) 100%);
+    }
+    
+    .scanner-header h2 {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .cyber-input {
+        background: rgba(26, 26, 46, 0.7);
+        border: 1px solid rgba(0, 255, 65, 0.3);
+        color: white;
+        padding: 20px;
+        border-radius: 5px;
+        transition: all 0.3s ease;
+    }
+    
+    .cyber-input:focus {
+        background: rgba(26, 26, 46, 0.9);
+        border-color: var(--matrix-green);
+        box-shadow: 0 0 15px rgba(0, 255, 65, 0.3);
+        color: white;
+    }
+    
+    .cyber-btn-lg {
+        padding: 15px 40px;
+        font-size: 1.2rem;
+    }
+    
+    .threat-level-card {
+        background: rgba(26, 26, 46, 0.7);
+        border: 1px solid rgba(0, 255, 65, 0.2);
+        border-radius: 5px;
+        padding: 25px;
+        margin-bottom: 30px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+    
+    .threat-header {
+        margin-bottom: 20px;
+    }
+    
+    .threat-value {
+        font-weight: bold;
+        text-shadow: 0 0 10px;
+    }
+    
+    .threat-meter {
+        background: rgba(0, 0, 0, 0.3);
+        height: 15px;
+        border-radius: 10px;
+        margin-bottom: 10px;
+        overflow: hidden;
+        position: relative;
+    }
+    
+    .meter-bar {
+        height: 100%;
+        border-radius: 10px;
+        position: relative;
+        transition: width 1s ease;
+    }
+    
+    .meter-glow {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.3);
+        animation: meterGlow 2s infinite alternate;
+    }
+    
+    @keyframes meterGlow {
+        from { opacity: 0.3; }
+        to { opacity: 0.7; }
+    }
+    
+    .meter-labels {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.8rem;
+        color: rgba(255, 255, 255, 0.6);
+    }
+    
+    .threat-score {
+        text-align: right;
+        font-size: 0.9rem;
+    }
+    
+    .score-value {
+        font-weight: bold;
+        font-family: 'Orbitron', sans-serif;
+    }
+    
+    .alert-card {
+        display: flex;
+        background: rgba(26, 26, 46, 0.7);
+        border-radius: 5px;
+        padding: 20px;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+    
+    .alert-card:hover {
+        transform: translateX(10px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    }
+    
+    .alert-danger {
+        border-left: 4px solid #f72585;
+    }
+    
+    .alert-warning {
+        border-left: 4px solid #ff9a00;
+    }
+    
+    .alert-info {
+        border-left: 4px solid #0ff0fc;
+    }
+    
+    .alert-icon {
+        font-size: 2rem;
+        margin-right: 20px;
+        align-self: center;
+    }
+    
+    .alert-danger .alert-icon {
+        color: #f72585;
+        text-shadow: 0 0 10px #f72585;
+    }
+    
+    .alert-warning .alert-icon {
+        color: #ff9a00;
+        text-shadow: 0 0 10px #ff9a00;
+    }
+    
+    .alert-info .alert-icon {
+        color: #0ff0fc;
+        text-shadow: 0 0 10px #0ff0fc;
+    }
+    
+    .alert-content {
+        flex: 1;
+    }
+    
+    .alert-content h5 {
+        margin-bottom: 10px;
+    }
+    
+    .alert-pulse {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: radial-gradient(circle at center, 
+            rgba(255, 255, 255, 0.1) 0%, 
+            transparent 70%);
+        opacity: 0;
+        transition: all 0.3s ease;
+    }
+    
+    .alert-card:hover .alert-pulse {
+        opacity: 1;
+    }
+    
+    .threat-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    
+    .threat-list li {
+        padding: 8px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        display: flex;
+        align-items: center;
+    }
+    
+    .threat-list li:last-child {
+        border-bottom: none;
+    }
+    
+    .link-text {
+        flex: 1;
+        font-family: monospace;
+        font-size: 0.9rem;
+        word-break: break-all;
+    }
+    
+    .link-badge {
+        background: rgba(255, 0, 0, 0.2);
+        color: #ff6b6b;
+        padding: 3px 8px;
+        border-radius: 3px;
+        font-size: 0.7rem;
+        margin-left: 10px;
+        border: 1px solid rgba(255, 0, 0, 0.3);
+    }
+    
+    .analysis-card {
+        background: rgba(26, 26, 46, 0.7);
+        border: 1px solid rgba(0, 255, 65, 0.2);
+        border-radius: 5px;
+        padding: 25px;
+        margin-top: 30px;
+    }
+    
+    .analysis-header {
+        margin-bottom: 20px;
+    }
+    
+    .analysis-header h4 {
+        color: var(--matrix-green);
+    }
+    
+    .analysis-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+    }
+    
+    .analysis-item {
+        background: rgba(10, 10, 18, 0.5);
+        border: 1px solid rgba(0, 255, 65, 0.1);
+        border-radius: 5px;
+        padding: 20px;
+        display: flex;
+        transition: all 0.3s ease;
+    }
+    
+    .analysis-item:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        border-color: rgba(0, 255, 65, 0.3);
+    }
+    
+    .analysis-icon {
+        font-size: 1.5rem;
+        color: var(--matrix-green);
+        margin-right: 15px;
+    }
+    
+    .analysis-content h6 {
+        color: var(--matrix-green);
+        margin-bottom: 10px;
+    }
+    
+    .analysis-content p {
+        margin-bottom: 5px;
+        font-size: 0.9rem;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Animate threat meter
+        const meterBar = document.querySelector('.meter-bar');
+        if (meterBar) {
+            gsap.from(meterBar, {
+                width: 0,
+                duration: 1.5,
+                ease: "power3.out"
+            });
+        }
+        
+        // Animate threat list items
+        const threatItems = document.querySelectorAll('.threat-list li');
+        threatItems.forEach((item, index) => {
+            gsap.from(item, {
+                x: -50,
+                opacity: 0,
+                duration: 0.5,
+                delay: index * 0.1,
+                ease: "back.out"
+            });
+        });
+    });
+</script>
+{% endblock %}
